@@ -3,22 +3,36 @@ from tkinter import scrolledtext, messagebox
 import re
 from collections import Counter
 
-# --- Summarizer Function ---
-def summarize_with_keywords(text, keywords, num_sentences=3):
+def summarize_with_keywords(text, keywords, num_sentences=2):
+    # Split text into sentences properly
     sentences = re.split(r'(?<=[.!?]) +', text.strip())
+
+    # Count word frequencies
     words = re.findall(r'\w+', text.lower())
     word_freq = Counter(words)
 
+    # Score each sentence
     sentence_scores = {}
     for sentence in sentences:
-        score = sum(word_freq.get(word, 0) for word in sentence.lower().split())
+        score = 0
+        # Add score based on word frequency
+        for word in sentence.lower().split():
+            score += word_freq.get(word, 0)
+        # Add bonus points for keywords
         for kw in keywords:
             if kw.lower() in sentence.lower():
-                score += 5
-        sentence_scores[sentence] = score
+                score += 10   # made keyword weight stronger
+        # Prevents duplicate sentences being chosen
+        if sentence.strip():
+            sentence_scores[sentence.strip()] = score
 
+    # Sort by score (highest first) and keep top N
     best_sentences = sorted(sentence_scores, key=sentence_scores.get, reverse=True)[:num_sentences]
-    return " ".join(best_sentences)
+
+    # Join them in the order they appeared in the text of the summary 
+    ordered_summary = [s for s in sentences if s.strip() in best_sentences]
+
+    return " ".join(ordered_summary)
 
 # --- GUI Functions ---
 def run_summary():
@@ -63,11 +77,12 @@ sentences_entry.grid(row=0, column=3, padx=5)
 
 tk.Button(control_frame, text="Summarize", command=run_summary).grid(row=0, column=4, padx=5)
 
-# Output text area
+# Output text area (where summary appears)
 tk.Label(root, text="Summary:").pack()
 output_text = scrolledtext.ScrolledText(root, wrap=tk.WORD, height=10)
 output_text.pack(fill=tk.BOTH, padx=10, pady=5, expand=True)
 
 # Run app
 root.mainloop()
+
 
